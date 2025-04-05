@@ -128,32 +128,33 @@ def earlystop(x):
     return counter
 
 #Weight and Biases
-np.random.seed(69)
-weight1 = np.random.randn(input_size, hidden_size) * np.sqrt(2.0 / input_size)
-bias1 = np.zeros((1, hidden_size))
-weight2 = np.random.randn(hidden_size, hidden_2_size) * np.sqrt(2.0 / hidden_size)
-bias2 = np.zeros((1, hidden_2_size))
-weight3 = np.random.randn(hidden_2_size, output_size) * np.sqrt(2.0 / hidden_2_size)
-bias3 = np.zeros((1, output_size))
+#np.random.seed(42)
+#weight1 = np.random.randn(input_size, hidden_size) * np.sqrt(2.0 / input_size)
+#bias1 = np.zeros((1, hidden_size))
+#weight2 = np.random.randn(hidden_size, hidden_2_size) * np.sqrt(2.0 / hidden_size)
+#bias2 = np.zeros((1, hidden_2_size))
+#weight3 = np.random.randn(hidden_2_size, output_size) * np.sqrt(2.0 / hidden_2_size)
+#bias3 = np.zeros((1, output_size))
 
-epochs = 0
-batch_size = 32
+epochs = 10
+batch_size = 32 
 eta_max = 0.01
 eta_min = 0.001
 learning_rate = 0.01
 
-#weight1 = np.load("weight1.npy")
-#bias1 = np.load("bias1.npy")
-#weight2 = np.load("weight2.npy")
-#bias2 = np.load("bias2.npy")
-#weight3 = np.load("weight3.npy") 
-#bias3 = np.load("bias3.npy")
+weight1 = np.load("weight1.npy")
+bias1 = np.load("bias1.npy")
+weight2 = np.load("weight2.npy")
+bias2 = np.load("bias2.npy")
+weight3 = np.load("weight3.npy") 
+bias3 = np.load("bias3.npy")
 
 #Training
+val_loss_list = []
+val_acc_list = []
 start_time = time.time()
 
 for epoch in range(epochs):
-    val_loss_list = []
     for i in range(0, x_train.shape[0], batch_size):
         x_batch = x_train[i:i+batch_size]
         y_batch = y_train[i:i+batch_size]
@@ -174,16 +175,14 @@ for epoch in range(epochs):
 
         #Backpropagation
         dL_da3 = a3 - y_batch
-        dL_dweight3 = np.dot(a2.T, dL_da3) / batch_size
+        dL_dweight3 = np.dot(scaled_a2.T, dL_da3) / batch_size
         dL_dbias3 = np.sum(dL_da3, axis=0, keepdims=True) / batch_size
 
-        dL_da2 = np.dot(dL_da3, weight3.T) * relu_derivative(z2)
-        dL_da2 *= dropout_mask2
-        dL_dweight2 = np.dot(a1.T, dL_da2) / batch_size
+        dL_da2 = np.dot(dL_da3, weight3.T) * relu_derivative(z2) * dropout_mask2 * scaling
+        dL_dweight2 = np.dot(scaled_a1.T, dL_da2) / batch_size
         dL_dbias2 = np.sum(dL_da2, axis=0, keepdims=True) / batch_size
         
-        dL_da1 = np.dot(dL_da2, weight2.T) * relu_derivative(z1)
-        dL_da1 *= dropout_mask1
+        dL_da1 = np.dot(dL_da2, weight2.T) * relu_derivative(z1) * dropout_mask1 * scaling
         dL_dweight1 = np.dot(x_batch.T, dL_da1) / batch_size
         dL_dbias1 = np.sum(dL_da1, axis=0, keepdims=True) / batch_size
 
@@ -202,12 +201,16 @@ for epoch in range(epochs):
     a2_val = relu(z2_val)
     z3_val = np.dot(a2_val, weight3) + bias3
     a3_val = softmax(z3_val)
+    val_pred = np.argmax(a3_val, axis=1)
+    val_true = np.argmax(y_test, axis=1)
+    val_acc = np.mean(val_pred == val_true)
     val_loss = -np.sum(y_test * np.log(a3_val + 1e-8)) / x_test.shape[0] 
-    val_loss_list.append(val_loss)
+    val_loss_list.append(round(val_loss, 4))
+    val_acc_list.append(val_acc)
     earlystop(val_loss_list)
 
     print(f"Val loss: {val_loss}")
-    print(f"Epoch {epoch}, W1 mean: {np.mean(weight1)}, W2 mean: {np.mean(weight2)}")
+    print(f"Epoch {epoch}, W1 mean: {np.mean(weight1)}, W2 mean: {np.mean(weight2)}, W3 Mean: {np.mean(weight3)}")
 
     np.save("weight1.npy", weight1)
     np.save("bias1.npy", bias1)
@@ -215,6 +218,17 @@ for epoch in range(epochs):
     np.save("bias2.npy", bias2)
     np.save("weight3.npy", weight3)
     np.save("bias3.npy", bias3)
+    
+plt.plot(range(1, epochs + 1), val_loss_list, marker='o', linestyle='-', color='green', label='validation loss')
+plt.plot(range(1, epochs + 1), val_acc_list, marker='o', linestyle='-', color='orange', label='validation accuracy')
+plt.title('Validation per Epoch')
+plt.xlabel('Epoch')
+plt.ylabel('Value')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig("val_graph.png")
+plt.close()
 
 end_time = time.time()
 print(f"Execution time: {end_time - start_time:.6f} seconds")
@@ -250,28 +264,28 @@ def own_sample(event = None):
     changeLabel()
 
 #accuracy test (using mnist)
-#for i in range(len(x_test)):
-#    prediction = predict(x_test[i].reshape(1, -1))  # Reshape to (1, 784)
-#    Y = np.argmax(y_test[i])  # Get the true label  
-#
-#    if prediction == Y:  # `predict()` already returns class index
-#        count += 1
+for i in range(len(x_test)):
+    prediction = predict(x_test[i].reshape(1, -1))  # Reshape to (1, 784)
+    Y = np.argmax(y_test[i])  # Get the true label  
+
+    if prediction == Y:  # `predict()` already returns class index
+        count += 1
 #        print(f"{i+1}. correct")
 #    else:
 #        print(f"{i+1}. wrong")
-#    total += 1  
-#
-#print(f'Validation accuracy: {count} / {total} = {count / total * 100}%')
-#
-#for i in range(len(x_train)):
-#    prediction = predict(x_train[i].reshape(1, -1))  # Reshape to (1, 784)
-#    Y = np.argmax(y_train[i])  # Get the true label  
-#
-#    if prediction == Y:   
-#        count += 1
-#    total += 1  
-#
-#print(f'Training accuracy: {count} / {total} = {count / total * 100}%')
+    total += 1  
+
+print(f'Validation accuracy: {count} / {total} = {count / total * 100}%')
+
+for i in range(len(x_train)):
+    prediction = predict(x_train[i].reshape(1, -1))  # Reshape to (1, 784)
+    Y = np.argmax(y_train[i])  # Get the true label  
+
+    if prediction == Y:   
+        count += 1
+    total += 1  
+
+print(f'Training accuracy: {count} / {total} = {count / total * 100}%')
 
 #Graph time :DDD
 digits = np.array([0,1,2,3,4,5,6,7,8,9])
@@ -319,5 +333,5 @@ canvas.bind("<B1-Motion>", paint)
 canvas.bind("<B3-Motion>", erase)
 canvas.bind("<Button-2>", clear)
 
-root.mainloop()
+#root.mainloop()
 
