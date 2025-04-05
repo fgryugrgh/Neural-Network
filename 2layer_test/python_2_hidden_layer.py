@@ -128,12 +128,12 @@ def earlystop(x):
     return counter
 
 #Weight and Biases
-np.random.seed(69) #Set the seed so the random number stays the same
-weight1 = np.random.randn(input_size, hidden_size) * np.sqrt(1.0 / input_size)
+np.random.seed(69)
+weight1 = np.random.randn(input_size, hidden_size) * np.sqrt(2.0 / input_size)
 bias1 = np.zeros((1, hidden_size))
-weight2 = np.random.randn(hidden_size, hidden_2_size) * np.sqrt(1.0 / hidden_size)
+weight2 = np.random.randn(hidden_size, hidden_2_size) * np.sqrt(2.0 / hidden_size)
 bias2 = np.zeros((1, hidden_2_size))
-weight3 = np.random.randn(hidden_2_size, output_size) * np.sqrt(1.0 / hidden_2_size)
+weight3 = np.random.randn(hidden_2_size, output_size) * np.sqrt(2.0 / hidden_2_size)
 bias3 = np.zeros((1, output_size))
 
 epochs = 0
@@ -142,10 +142,12 @@ eta_max = 0.01
 eta_min = 0.001
 learning_rate = 0.01
 
-weight1 = np.load("weight1.npy")
-bias1 = np.load("bias1.npy")
-weight2 = np.load("weight2.npy")
-bias2 = np.load("bias2.npy")
+#weight1 = np.load("weight1.npy")
+#bias1 = np.load("bias1.npy")
+#weight2 = np.load("weight2.npy")
+#bias2 = np.load("bias2.npy")
+#weight3 = np.load("weight3.npy") 
+#bias3 = np.load("bias3.npy")
 
 #Training
 start_time = time.time()
@@ -158,28 +160,37 @@ for epoch in range(epochs):
 
         z1 = np.dot(x_batch, weight1) + bias1
         a1 = relu(z1)
-        dropout_mask = np.random.rand(*a1.shape) > dropout_rate
-        d1 = a1 * dropout_mask
+        dropout_mask1 = np.random.rand(*a1.shape) > dropout_rate
+        d1 = a1 * dropout_mask1
         scaled_a1 = d1 * scaling
         z2 = np.dot(scaled_a1, weight2) + bias2
         a2 = relu(z2)
-        d2 = dropout(a2)
+        dropout_mask2 = np.random.rand(*a2.shape) > dropout_rate
+        d2 = a2 * dropout_mask2 
         scaled_a2 = d2 * scaling
-        z3 = np.dot(scaled_a2, weight3)  bias3
-
-        loss = -np.sum(y_batch * np.log(a2 + 1e-8)) / batch_size
+        z3 = np.dot(scaled_a2, weight3) + bias3
+        a3 = softmax(z3)
+        loss = -np.sum(y_batch * np.log(a3 + 1e-8)) / batch_size
 
         #Backpropagation
-        dL_da2 = a2 - y_batch
+        dL_da3 = a3 - y_batch
+        dL_dweight3 = np.dot(a2.T, dL_da3) / batch_size
+        dL_dbias3 = np.sum(dL_da3, axis=0, keepdims=True) / batch_size
+
+        dL_da2 = np.dot(dL_da3, weight3.T) * relu_derivative(z2)
+        dL_da2 *= dropout_mask2
         dL_dweight2 = np.dot(a1.T, dL_da2) / batch_size
         dL_dbias2 = np.sum(dL_da2, axis=0, keepdims=True) / batch_size
         
         dL_da1 = np.dot(dL_da2, weight2.T) * relu_derivative(z1)
+        dL_da1 *= dropout_mask1
         dL_dweight1 = np.dot(x_batch.T, dL_da1) / batch_size
         dL_dbias1 = np.sum(dL_da1, axis=0, keepdims=True) / batch_size
 
+        weight3 -= learning_rate * dL_dweight3
         weight2 -= learning_rate * dL_dweight2
         weight1 -= learning_rate * dL_dweight1
+        bias3 -= learning_rate * dL_dbias3
         bias2 -= learning_rate * dL_dbias2 
         bias1 -= learning_rate * dL_dbias1 
 
@@ -188,8 +199,10 @@ for epoch in range(epochs):
     z1_val = np.dot(x_test, weight1) + bias1
     a1_val = relu(z1_val)
     z2_val = np.dot(a1_val, weight2) + bias2
-    a2_val = softmax(z2_val)
-    val_loss = -np.sum(y_test * np.log(a2_val + 1e-8)) / x_test.shape[0] 
+    a2_val = relu(z2_val)
+    z3_val = np.dot(a2_val, weight3) + bias3
+    a3_val = softmax(z3_val)
+    val_loss = -np.sum(y_test * np.log(a3_val + 1e-8)) / x_test.shape[0] 
     val_loss_list.append(val_loss)
     earlystop(val_loss_list)
 
@@ -200,6 +213,8 @@ for epoch in range(epochs):
     np.save("bias1.npy", bias1)
     np.save("weight2.npy", weight2)
     np.save("bias2.npy", bias2)
+    np.save("weight3.npy", weight3)
+    np.save("bias3.npy", bias3)
 
 end_time = time.time()
 print(f"Execution time: {end_time - start_time:.6f} seconds")
@@ -214,8 +229,10 @@ def predict(x):
     z1 = np.dot(x, weight1) + bias1
     a1 = relu(z1)
     z2 = np.dot(a1, weight2) + bias2 
-    softmax_output = softmax(z2)
-#    print(np.sum(softmax(z2)))
+    a2 = relu(z2)
+    z3 = np.dot(a2, weight3) + bias3
+    softmax_output = softmax(z3)
+#    print(np.sum(softmax(z3)))
 #    print(np.floor(np.max(softmax_output)*100))
     return np.argmax(softmax_output, axis=1)
 
