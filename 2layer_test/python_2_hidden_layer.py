@@ -96,23 +96,23 @@ y_test = one_hot(y_test)
 
 #Layers      Neuron Amount
 input_size = 784 #28*x28
-hidden_size = 128
-hidden_2_size = 64
+hidden_size = 256
+hidden_2_size = 128
 output_size = 10
-dropout_rate = 0.2
+dropout_rate = 0.3
 scaling = 1/(1 - dropout_rate)
 
 #Functino for forward propagation
-def relu(x):
-    return np.maximum(0,x) 
+def leaky_relu(x, alpha=0.01):
+    return np.where(x > 0, x, alpha * x)
 
 def softmax(x):
     exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))  # Stability trick
     return exp_x / np.sum(exp_x, axis=1, keepdims=True)  # Normalize each row
 
 #function for backward propagation
-def relu_derivative(x):
-    return (x > 0).astype(float)  # Returns 1 for x > 0, else 0
+def leaky_relu_derivative(x, alpha=0.01):
+    return np.where(x > 0, 1, alpha)
 
 def cosine_decay(t, T, eta_max, eta_min):
     return eta_min + 0.5 * (eta_max - eta_min) * (1 + np.cos(np.pi * t / T))
@@ -136,10 +136,10 @@ def earlystop(x):
 #weight3 = np.random.randn(hidden_2_size, output_size) * np.sqrt(2.0 / hidden_2_size)
 #bias3 = np.zeros((1, output_size))
 
-epochs = 10
+epochs = 20
 batch_size = 32 
 eta_max = 0.01
-eta_min = 0.001
+eta_min = 0.0001
 learning_rate = 0.01
 
 weight1 = np.load("weight1.npy")
@@ -150,6 +150,8 @@ weight3 = np.load("weight3.npy")
 bias3 = np.load("bias3.npy")
 
 #Training
+#best_val_loss = float('inf')
+best_val_loss = np.load("best_val_loss.npy")
 val_loss_list = []
 val_acc_list = []
 start_time = time.time()
@@ -160,29 +162,32 @@ for epoch in range(epochs):
         y_batch = y_train[i:i+batch_size]
 
         z1 = np.dot(x_batch, weight1) + bias1
-        a1 = relu(z1)
+        a1 = leaky_relu(z1)
         dropout_mask1 = np.random.rand(*a1.shape) > dropout_rate
         d1 = a1 * dropout_mask1
         scaled_a1 = d1 * scaling
         z2 = np.dot(scaled_a1, weight2) + bias2
-        a2 = relu(z2)
+        a2 = leaky_relu(z2)
         dropout_mask2 = np.random.rand(*a2.shape) > dropout_rate
         d2 = a2 * dropout_mask2 
         scaled_a2 = d2 * scaling
         z3 = np.dot(scaled_a2, weight3) + bias3
         a3 = softmax(z3)
         loss = -np.sum(y_batch * np.log(a3 + 1e-8)) / batch_size
+        l2_lambda = 1e-5  # Tune this hyperparameter
+        l2_penalty = l2_lambda * (np.sum(weight1**2) + np.sum(weight2**2) + np.sum(weight3**2))
+        loss += l2_penalty
 
         #Backpropagation
         dL_da3 = a3 - y_batch
         dL_dweight3 = np.dot(scaled_a2.T, dL_da3) / batch_size
         dL_dbias3 = np.sum(dL_da3, axis=0, keepdims=True) / batch_size
 
-        dL_da2 = np.dot(dL_da3, weight3.T) * relu_derivative(z2) * dropout_mask2 * scaling
+        dL_da2 = np.dot(dL_da3, weight3.T) * leaky_relu_derivative(z2)  * dropout_mask2 * scaling
         dL_dweight2 = np.dot(scaled_a1.T, dL_da2) / batch_size
         dL_dbias2 = np.sum(dL_da2, axis=0, keepdims=True) / batch_size
         
-        dL_da1 = np.dot(dL_da2, weight2.T) * relu_derivative(z1) * dropout_mask1 * scaling
+        dL_da1 = np.dot(dL_da2, weight2.T) * leaky_relu_derivative(z1) * dropout_mask1 * scaling
         dL_dweight1 = np.dot(x_batch.T, dL_da1) / batch_size
         dL_dbias1 = np.sum(dL_da1, axis=0, keepdims=True) / batch_size
 
@@ -196,9 +201,9 @@ for epoch in range(epochs):
     learning_rate = cosine_decay(epoch, epochs-1, eta_max, eta_min)
 
     z1_val = np.dot(x_test, weight1) + bias1
-    a1_val = relu(z1_val)
+    a1_val = leaky_relu(z1_val)
     z2_val = np.dot(a1_val, weight2) + bias2
-    a2_val = relu(z2_val)
+    a2_val = leaky_relu(z2_val)
     z3_val = np.dot(a2_val, weight3) + bias3
     a3_val = softmax(z3_val)
     val_pred = np.argmax(a3_val, axis=1)
@@ -209,18 +214,23 @@ for epoch in range(epochs):
     val_acc_list.append(val_acc)
     earlystop(val_loss_list)
 
-    print(f"Val loss: {val_loss}")
+    print(f"Val loss: {val_loss}, Best Val Loss: {best_val_loss}")
+    print(f"Current val acc: {val_acc}")
     print(f"Epoch {epoch}, W1 mean: {np.mean(weight1)}, W2 mean: {np.mean(weight2)}, W3 Mean: {np.mean(weight3)}")
 
-    np.save("weight1.npy", weight1)
-    np.save("bias1.npy", bias1)
-    np.save("weight2.npy", weight2)
-    np.save("bias2.npy", bias2)
-    np.save("weight3.npy", weight3)
-    np.save("bias3.npy", bias3)
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        print(f"New best model at epoch {epoch}, val loss: {val_loss}")
+        np.save("weight1.npy", weight1)
+        np.save("bias1.npy", bias1)
+        np.save("weight2.npy", weight2)
+        np.save("bias2.npy", bias2)
+        np.save("weight3.npy", weight3)
+        np.save("bias3.npy", bias3)
+        np.save("best_val_loss.npy", best_val_loss)
     
-plt.plot(range(1, epochs + 1), val_loss_list, marker='o', linestyle='-', color='green', label='validation loss')
-plt.plot(range(1, epochs + 1), val_acc_list, marker='o', linestyle='-', color='orange', label='validation accuracy')
+plt.plot(range(1, epochs + 1), val_loss_list, linestyle='-', color='green', label='validation loss')
+plt.plot(range(1, epochs + 1), val_acc_list, linestyle='-', color='orange', label='validation accuracy')
 plt.title('Validation per Epoch')
 plt.xlabel('Epoch')
 plt.ylabel('Value')
@@ -241,9 +251,9 @@ softmax_output = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 def predict(x):
     global softmax_output
     z1 = np.dot(x, weight1) + bias1
-    a1 = relu(z1)
+    a1 = leaky_relu(z1)
     z2 = np.dot(a1, weight2) + bias2 
-    a2 = relu(z2)
+    a2 = leaky_relu(z2)
     z3 = np.dot(a2, weight3) + bias3
     softmax_output = softmax(z3)
 #    print(np.sum(softmax(z3)))
