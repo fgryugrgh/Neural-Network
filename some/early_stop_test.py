@@ -1,13 +1,17 @@
-validation = [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+validation = [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 
 def earlystop(x):
     counter = 0
     for i in range(len(x)):
         if counter == 10:
             print("stopped")
-            return
+            return True
         else:
             counter = counter + 1 if x[i] == x[i-1] else 0
-    return counter
+            print("good")
 
-earlystop(validation)
+for i in range (5):
+    if earlystop(validation):
+        break
+    print(f"{i}. good")
+    

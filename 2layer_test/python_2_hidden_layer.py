@@ -281,7 +281,8 @@ for epoch in range(epochs):
     val_loss = -np.sum(y_test * np.log(a3_val + 1e-8)) / x_test.shape[0] 
     val_loss_list.append(round(val_loss, 4))
     val_acc_list.append(val_acc)
-    earlystop(val_loss_list)
+    if earlystop(val_loss_list):
+        break
     avg_train_loss = epoch_train_loss/batch_num
 
     print(f"Avg Train Loss: {avg_train_loss}")

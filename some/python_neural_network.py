@@ -49,7 +49,7 @@ y_test = one_hot(y_test)
 input_size = 784 #28*x28
 hidden_size = 512
 output_size = 10
-dropout_rate = 0.2
+dropout_rate = 0.3
 scaling = 1/(1 - dropout_rate)
 
 #Functino for forward propagation
@@ -65,23 +65,28 @@ def relu_derivative(x):
     return (x > 0).astype(float)  # Returns 1 for x > 0, else 0
 
 def cosine_decay(t, T, eta_max, eta_min):
-    return eta_min + 0.5 * (eta_max - eta_min) * (1 + np.cos(np.pi * t / T))
+    if t <= warmup_epochs:
+        return eta_start + (eta_max - eta_start) * t / warmup_epochs
+    else:
+        t_adjusted = t - warmup_epochs
+        t_cosine = T - warmup_epochs
+        return eta_min + 0.5 * (eta_max - eta_min) * (1 + np.cos(np.pi * t_adjusted / t_cosine))
 
 def earlystop(x):
     counter = 0
     for i in range(len(x)):
         if counter == 10:
             print("stopped early")
-            return
+            return True
         else:
             counter = counter + 1 if x[i] == x[i-1] else 0
-    return counter
+    return False
 
 #Weight and Biases initialization (commented because it'a unused after the first time)
 #np.random.seed(69) #Set the seed so the random number stays the same
-#weight1 = np.random.randn(input_size, hidden_size) * np.sqrt(1.0 / input_size)
+#weight1 = np.random.randn(input_size, hidden_size) * np.sqrt(2.0 / input_size)
 #bias1 = np.zeros((1, hidden_size))
-#weight2 = np.random.randn(hidden_size, output_size) * np.sqrt(1.0 / hidden_size)
+#weight2 = np.random.randn(hidden_size, output_size) * np.sqrt(2.0 / hidden_size)
 #bias2 = np.zeros((1, output_size))
 
 #import weigt and biases
@@ -92,13 +97,16 @@ bias2 = np.load("bias2.npy")
 
 #training variable
 epochs = 0
+warmup_epochs = 15
 batch_size = 32
-eta_max = 0.01
-eta_min = 0.0001
-learning_rate = 0.01
+eta_start= 0.0001
+eta_max = 0.001
+eta_min = 0.00001
+learning_rate = 0.0001
 #best_val_loss = float('inf')
 best_val_loss = np.load('best_val_loss.npy')
 val_loss_list = []
+val_acc_list = []
 
 #Training
 start_time = time.time()
@@ -117,7 +125,7 @@ for epoch in range(epochs):
         a2 = softmax(z2)
 
         loss = -np.sum(y_batch * np.log(a2 + 1e-8)) / batch_size
-        l2_lambda = 1e-5 # Tune this hyperparameter
+        l2_lambda = 1e-5# Tune this hyperparameter
         l2_penalty = l2_lambda * (np.sum(weight1**2) + np.sum(weight2**2))
         loss += l2_penalty
 
@@ -142,11 +150,18 @@ for epoch in range(epochs):
     z2_val = np.dot(a1_val, weight2) + bias2
     a2_val = softmax(z2_val)
     val_loss = -np.sum(y_test * np.log(a2_val + 1e-8)) / x_test.shape[0] 
-    val_loss_list.append(round(val_loss, 3))
-    earlystop(val_loss_list)
+    val_loss_list.append(round(val_loss, 5))
+    val_pred = np.argmax(a2_val, axis=1)
+    val_true = np.argmax(y_test, axis=1)
+    val_acc = np.mean(val_pred == val_true)
+    val_acc_list.append(val_acc)
 
-    print(f"Val loss: {val_loss}")
+    print(f"Val loss: {val_loss} Best Val Loss: {best_val_loss}")
+    print(f"Current Val Acc: {val_acc}")
     print(f"Epoch {epoch}, W1 mean: {np.mean(weight1)}, W2 mean: {np.mean(weight2)}")
+
+    if earlystop(val_loss_list):
+        break
 
     if val_loss < best_val_loss:
         best_val_loss = val_loss
@@ -156,6 +171,17 @@ for epoch in range(epochs):
         np.save("bias1.npy", bias1)
         np.save("weight2.npy", weight2)
         np.save("bias2.npy", bias2)
+
+plt.plot(range(1, epochs + 1), val_loss_list, linestyle='-', color='green', label='validation loss')
+plt.plot(range(1, epochs + 1), val_acc_list, linestyle='-', color='orange', label='validation accuracy')
+plt.title('Validation per Epoch')
+plt.xlabel('Epoch')
+plt.ylabel('Value')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig("val_graph.png")
+plt.close()
 
 end_time = time.time()
 print(f"Execution time: {end_time - start_time:.6f} seconds")
