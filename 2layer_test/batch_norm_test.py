@@ -7,30 +7,23 @@ dummy = np.array(
  [  1.0,   0.0,  -1.0],
  [  2.0,   0.0,  -2.0]]
 )
-dummy2 = np.array(
-[[5.0, 5.0, 5.0],
- [5.0, 5.0, 5.0],
- [5.0, 5.0, 5.0],
- [5.0, 5.0, 5.0],
- [5.0, 5.0, 5.0]]
-)
-dummy3 = np.array(
-[[ 3.0,  7.0, -1.0],
- [ 5.0,  2.0,  0.0],
- [ 8.0,  6.0,  3.0],
- [ 1.0,  4.0, -2.0],
- [ 4.0,  5.0,  1.0]]
-)
+
 batch_size = 5
 small_constant = 1e-5
+hidden_size = 16
+gamma1 = np.ones((hidden_size,))
+beta1 = np.zeros((hidden_size,))
 
-def batch_norm(x):
+def batch_norm(x, gamma, beta):
     mean = np.mean(x, axis=0)
     variance = np.var(x, axis=0, mean=mean, ddof=0)
-    norm = (x-mean)/np.sqrt(variance + small_constant)
-    return norm
 
-test1 = batch_norm(dummy)
-test2 = batch_norm(dummy2)
-test3 = batch_norm(dummy3)
-print(f"Test 1: {test1}\nTest 2: {test2}\nTest 3: {test3}")
+    stddev = 1./np.sqrt(variance + small_constant)
+    norm = (x-mean)*stddev
+
+    out = gamma * norm + beta
+    cache = (x, norm, mean, variance, stddev, gamma,beta)
+    return out, cache
+
+test1, cache1 = batch_norm(dummy, gamma1, beta1)
+print(test1)
