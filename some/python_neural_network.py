@@ -47,7 +47,7 @@ y_test = one_hot(y_test)
 
 #Layers      Neuron Amount
 input_size = 784 #28*x28
-hidden_size = 256
+hidden_size = 512
 output_size = 10
 dropout_rate = 0.2
 scaling = 1/(1 - dropout_rate)
@@ -93,15 +93,17 @@ bias2 = np.load("bias2.npy")
 #training variable
 epochs = 0
 batch_size = 32
-eta_max = 0.0001
-eta_min = 0.00001
-learning_rate = 0.0001
+eta_max = 0.01
+eta_min = 0.0001
+learning_rate = 0.01
+#best_val_loss = float('inf')
+best_val_loss = np.load('best_val_loss.npy')
+val_loss_list = []
 
 #Training
 start_time = time.time()
 
 for epoch in range(epochs):
-    val_loss_list = []
     for i in range(0, x_train.shape[0], batch_size):
         x_batch = x_train[i:i+batch_size]
         y_batch = y_train[i:i+batch_size]
@@ -115,6 +117,9 @@ for epoch in range(epochs):
         a2 = softmax(z2)
 
         loss = -np.sum(y_batch * np.log(a2 + 1e-8)) / batch_size
+        l2_lambda = 1e-5 # Tune this hyperparameter
+        l2_penalty = l2_lambda * (np.sum(weight1**2) + np.sum(weight2**2))
+        loss += l2_penalty
 
         #Backpropagation
         dL_da2 = a2 - y_batch
@@ -143,10 +148,14 @@ for epoch in range(epochs):
     print(f"Val loss: {val_loss}")
     print(f"Epoch {epoch}, W1 mean: {np.mean(weight1)}, W2 mean: {np.mean(weight2)}")
 
-    np.save("weight1.npy", weight1)
-    np.save("bias1.npy", bias1)
-    np.save("weight2.npy", weight2)
-    np.save("bias2.npy", bias2)
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        print(f"New best model at epoch {epoch}, val loss: {val_loss}")
+        np.save("best_val_loss.npy", best_val_loss)
+        np.save("weight1.npy", weight1)
+        np.save("bias1.npy", bias1)
+        np.save("weight2.npy", weight2)
+        np.save("bias2.npy", bias2)
 
 end_time = time.time()
 print(f"Execution time: {end_time - start_time:.6f} seconds")
@@ -180,28 +189,28 @@ def own_sample(event = None):
     changeLabel()
 
 #accuracy test (using mnist)
-#for i in range(len(x_test)):
-#    prediction = predict(x_test[i].reshape(1, -1))  # Reshape to (1, 784)
-#    Y = np.argmax(y_test[i])  # Get the true label  
-#
-#    if prediction == Y:  # `predict()` already returns class index
-#        count += 1
+for i in range(len(x_test)):
+    prediction = predict(x_test[i].reshape(1, -1))  # Reshape to (1, 784)
+    Y = np.argmax(y_test[i])  # Get the true label  
+
+    if prediction == Y:  # `predict()` already returns class index
+        count += 1
 #        print(f"{i+1}. correct")
 #    else:
 #        print(f"{i+1}. wrong")
-#    total += 1  
-#
-#print(f'Validation accuracy: {count} / {total} = {count / total * 100}%')
-#
-#for i in range(len(x_train)):
-#    prediction = predict(x_train[i].reshape(1, -1))  # Reshape to (1, 784)
-#    Y = np.argmax(y_train[i])  # Get the true label  
-#
-#    if prediction == Y:   
-#        count += 1
-#    total += 1  
-#
-#print(f'Training accuracy: {count} / {total} = {count / total * 100}%')
+    total += 1  
+
+print(f'Validation accuracy: {count} / {total} = {count / total * 100}%')
+
+for i in range(len(x_train)):
+    prediction = predict(x_train[i].reshape(1, -1))  # Reshape to (1, 784)
+    Y = np.argmax(y_train[i])  # Get the true label  
+
+    if prediction == Y:   
+        count += 1
+    total += 1  
+
+print(f'Training accuracy: {count} / {total} = {count / total * 100}%')
 
 #Graph time :DDD
 digits = np.array([0,1,2,3,4,5,6,7,8,9])
@@ -307,5 +316,5 @@ canvas.bind("<B1-Motion>", paint)
 canvas.bind("<B3-Motion>", erase)
 canvas.bind("<Button-2>", clear)
 
-root.mainloop()
+#root.mainloop()
 
