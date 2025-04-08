@@ -140,17 +140,22 @@ def leaky_relu_derivative(x, alpha=0.01):
     return np.where(x > 0, 1, alpha)
 
 def cosine_decay(t, T, eta_max, eta_min):
-    return eta_min + 0.5 * (eta_max - eta_min) * (1 + np.cos(np.pi * t / T))
+    if t <= warmup_epochs:
+        return eta_start + (eta_max - eta_start) * t / warmup_epochs
+    else:
+        t_adjusted = t - warmup_epochs
+        t_cosine = T - warmup_epochs
+        return eta_min + 0.5 * (eta_max - eta_min) * (1 + np.cos(np.pi * t_adjusted / t_cosine))
 
 def earlystop(x):
     counter = 0
     for i in range(len(x)):
         if counter == 10:
             print("stopped early")
-            return
+            return True
         else:
             counter = counter + 1 if x[i] == x[i-1] else 0
-    return counter
+    return False
 
 def backward_batch_norm(dout, cache):
     x, norm, mean, variance, stddev, gamma, beta = cache
@@ -184,10 +189,12 @@ def backward_batch_norm(dout, cache):
 #bias3 = np.zeros((1, output_size))
 
 epochs = 0
+warmup_epochs = 10
 batch_size = 128
-eta_max = 0.01
-eta_min = 0.0001
-learning_rate = 0.01
+eta_start = 0.0005
+eta_max = 0.005
+eta_min = 0.00001
+learning_rate = 0.0005
 
 weight1 = np.load("weight1.npy")
 bias1 = np.load("bias1.npy")
@@ -369,13 +376,13 @@ for i in range(len(x_test)):
 
 print(f'Validation accuracy: {count} / {total} = {count / total * 100}%')
 
-for i in range(len(x_train)):
-    prediction = predict(x_train[i].reshape(1, -1))  # Reshape to (1, 784)
-    Y = np.argmax(y_train[i])  # Get the true label  
-
-    if prediction == Y:   
-        count += 1
-    total += 1  
+#for i in range(len(x_train)):
+#    prediction = predict(x_train[i].reshape(1, -1))  # Reshape to (1, 784)
+#    Y = np.argmax(y_train[i])  # Get the true label  
+#
+#    if prediction == Y:   
+#        count += 1
+#    total += 1  
 
 print(f'Training accuracy: {count} / {total} = {count / total * 100}%')
 
@@ -415,7 +422,7 @@ def changeLabel():
 guessLabel = Label(root,font=("Helvetica", 13), text = f"The NN Think it's the number\nand it's 0% sure")
 guessLabel.grid(row=0, column=2, sticky="w")
 
-info = Label(root, text = "This is a simple neural network to predict a handwritten digit. it's trained using the MNIST dataset \nand it achieved a 97.54% accuracy on 10000 MNIST test data")
+info = Label(root, text = "This is a simple neural network to predict a handwritten digit. it's trained using the MNIST dataset \nand it achieved a 98.08% accuracy on 10000 MNIST test data")
 info.grid(row = 1, column = 1)
 
 #Keybind
@@ -425,5 +432,5 @@ canvas.bind("<B1-Motion>", paint)
 canvas.bind("<B3-Motion>", erase)
 canvas.bind("<Button-2>", clear)
 
-#root.mainloop()
+root.mainloop()
 

@@ -33,8 +33,8 @@ default_bg = root.cget("bg")
 x_train = x_train.reshape(-1, 28*28) / 255.0
 x_test = x_test.reshape(-1, 28*28) / 255.0
 
-x_train = (x_train > 0.5).astype(np.float32)
-x_test = (x_test > 0.5).astype(np.float32)
+#x_train = (x_train > 0.5).astype(np.float32)
+#x_test = (x_test > 0.5).astype(np.float32)
 
 #one hot encoding
 def one_hot(y, num_classes=10): 
@@ -70,7 +70,7 @@ def cosine_decay(t, T, eta_max, eta_min):
     else:
         t_adjusted = t - warmup_epochs
         t_cosine = T - warmup_epochs
-        return eta_min + 0.5 * (eta_max - eta_min) * (1 + np.cos(np.pi * t_adjusted / t_cosine))
+        return eta_start + 0.5 * (eta_max - eta_start) * (1 - np.cos(np.pi * t / warmup_epochs))
 
 def earlystop(x):
     counter = 0
@@ -90,19 +90,19 @@ def earlystop(x):
 #bias2 = np.zeros((1, output_size))
 
 #import weigt and biases
-weight1 = np.load("weight1.npy")
-bias1 = np.load("bias1.npy")
-weight2 = np.load("weight2.npy")
-bias2 = np.load("bias2.npy")
+weight1 = np.load("weight1_grayscale.npy")
+bias1 = np.load("bias1_grayscale.npy")
+weight2 = np.load("weight2_grayscale.npy")
+bias2 = np.load("bias2_grayscale.npy")
 
 #training variable
-epochs = 0
-warmup_epochs = 15
+epochs = 50
+warmup_epochs = 5
 batch_size = 32
-eta_start= 0.0001
-eta_max = 0.001
-eta_min = 0.00001
-learning_rate = 0.0001
+eta_start= 0.00001
+eta_max = 0.00005
+eta_min = 0.000001
+learning_rate = 0.0005
 #best_val_loss = float('inf')
 best_val_loss = np.load('best_val_loss.npy')
 val_loss_list = []
@@ -166,11 +166,11 @@ for epoch in range(epochs):
     if val_loss < best_val_loss:
         best_val_loss = val_loss
         print(f"New best model at epoch {epoch}, val loss: {val_loss}")
-        np.save("best_val_loss.npy", best_val_loss)
-        np.save("weight1.npy", weight1)
-        np.save("bias1.npy", bias1)
-        np.save("weight2.npy", weight2)
-        np.save("bias2.npy", bias2)
+        np.save("best_val_loss_grayscale.npy", best_val_loss)
+        np.save("weight1_grayscale.npy", weight1)
+        np.save("bias1_grayscale.npy", bias1)
+        np.save("weight2_grayscale.npy", weight2)
+        np.save("bias2_grayscale.npy", bias2)
 
 plt.plot(range(1, epochs + 1), val_loss_list, linestyle='-', color='green', label='validation loss')
 plt.plot(range(1, epochs + 1), val_acc_list, linestyle='-', color='orange', label='validation accuracy')
