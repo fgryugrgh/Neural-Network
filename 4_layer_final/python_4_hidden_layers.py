@@ -83,8 +83,8 @@ rng = np.random.default_rng()
 x_train = x_train.reshape(-1, 28*28) / 255.0
 x_test = x_test.reshape(-1, 28*28) / 255.0
 
-x_train = (x_train > 0.5).astype(np.float32)
-x_test = (x_test > 0.5).astype(np.float32)
+#x_train = (x_train > 0.5).astype(np.float32)
+#x_test = (x_test > 0.5).astype(np.float32)
 
 def one_hot(y, num_classes=10): 
     onehot = np.zeros((y.shape[0], num_classes)) 
@@ -96,17 +96,23 @@ y_test = one_hot(y_test)
 
 #Layers      Neuron Amount
 input_size = 784 #28*x28
-hidden_size = 512
+hidden_1_size = 512
 hidden_2_size = 256
+hidden_3_size = 128
+hidden_4_size = 64
 output_size = 10
 dropout_rate = 0.2
 scaling = 1/(1 - dropout_rate)
 small_constant = 1e-5
 momentum = 0.9
-#running_mean1 = np.zeros((hidden_size,))
-#running_var1 = np.ones((hidden_size,))
+#running_mean1 = np.zeros((hidden_1_size,))
+#running_var1 = np.ones((hidden_1_size,))
 #running_mean2 = np.zeros((hidden_2_size,))
 #running_var2 = np.ones((hidden_2_size,))
+#running_mean3 = np.zeros((hidden_3_size,))
+#running_var3 = np.ones((hidden_3_size,))
+#running_mean4 = np.zeros((hidden_4_size,))
+#running_var4 = np.ones((hidden_4_size,))
 
 #Functino for forward propagation
 def leaky_relu(x, alpha=0.01):
@@ -177,22 +183,30 @@ def backward_batch_norm(dout, cache):
 
 #Weight and Biases
 #np.random.seed(42)
-#weight1 = np.random.randn(input_size, hidden_size) * np.sqrt(2.0 / input_size)
-#bias1 = np.zeros((1, hidden_size))
-#gamma1 = np.ones((hidden_size,))
-#beta1 = np.zeros((hidden_size,))
-#weight2 = np.random.randn(hidden_size, hidden_2_size) * np.sqrt(2.0 / hidden_size)
+#weight1 = np.random.randn(input_size, hidden_1_size) * np.sqrt(2.0 / input_size)
+#bias1 = np.zeros((1, hidden_1_size))
+#gamma1 = np.ones((hidden_1_size,))
+#beta1 = np.zeros((hidden_1_size,))
+#weight2 = np.random.randn(hidden_1_size, hidden_2_size) * np.sqrt(2.0 / hidden_1_size)
 #bias2 = np.zeros((1, hidden_2_size))
 #gamma2 = np.ones((hidden_2_size,))
 #beta2 = np.zeros((hidden_2_size,))
-#weight3 = np.random.randn(hidden_2_size, output_size) * np.sqrt(2.0 / hidden_2_size)
-#bias3 = np.zeros((1, output_size))
+#weight3 = np.random.randn(hidden_2_size, hidden_3_size) * np.sqrt(2.0 / hidden_2_size)
+#bias3 = np.zeros((1, hidden_3_size))
+#gamma3 = np.ones((hidden_3_size,))
+#beta3 = np.zeros((hidden_3_size,))
+#weight4= np.random.randn(hidden_3_size, hidden_4_size) * np.sqrt(2.0 / hidden_3_size)
+#bias4 = np.zeros((1, hidden_4_size))
+#gamma4 = np.ones((hidden_4_size,))
+#beta4 = np.zeros((hidden_4_size,))
+#weight5 = np.random.randn(hidden_4_size, output_size) * np.sqrt(2.0 / hidden_4_size)
+#bias5 = np.zeros((1, output_size))
 
-epochs = 0
-warmup_epochs = 10
+epochs = 100
+warmup_epochs = 15
 batch_size = 128
 eta_start = 0.0005
-eta_max = 0.005
+eta_max = 0.001
 eta_min = 0.00001
 learning_rate = 0.0005
 
@@ -204,12 +218,36 @@ weight2 = np.load("weight2.npy")
 bias2 = np.load("bias2.npy")
 gamma2 = np.load("gamma2.npy")
 beta2 = np.load("beta2.npy") 
-weight3 = np.load("weight3.npy") 
+weight3 = np.load("weight3.npy")
 bias3 = np.load("bias3.npy")
+gamma3 = np.load("gamma3.npy")
+beta3 = np.load("beta3.npy")
+weight4 = np.load("weight4.npy")
+bias4 = np.load("bias4.npy")
+gamma4 = np.load("gamma4.npy")
+beta4 = np.load("beta4.npy") 
+weight5 = np.load("weight5.npy") 
+bias5 = np.load("bias5.npy")
 running_mean1 = np.load("running_mean1.npy")
 running_var1 = np.load("running_var1.npy")
 running_mean2 = np.load("running_mean2.npy")
 running_var2 = np.load("running_var2.npy")
+running_mean3 = np.load("running_mean3.npy")
+running_var3 = np.load("running_var3.npy")
+running_mean4 = np.load("running_mean4.npy")
+running_var4 = np.load("running_var4.npy")
+scale1 = gamma1 / np.sqrt(running_var1 + small_constant)
+weight1_folded = weight1 * scale1  
+bias1_folded = (bias1 - running_mean1) * scale1 + beta1
+scale2 = gamma2 / np.sqrt(running_var2 + small_constant)
+weight2_folded = weight2 * scale2 
+bias2_folded = (bias2 - running_mean2) * scale2 + beta2
+scale3 = gamma3 / np.sqrt(running_var3 + small_constant) 
+weight3_folded = weight3 * scale3 
+bias3_folded = (bias3 - running_mean3) * scale3 + beta3
+scale4 = gamma4 / np.sqrt(running_var4 + small_constant)  
+weight4_folded = weight4 * scale4  
+bias4_folded = (bias4 - running_mean4) * scale4 + beta4
 
 #Training
 #best_val_loss = float('inf')
@@ -238,21 +276,43 @@ for epoch in range(epochs):
         d2 = a2 * dropout_mask2 
         scaled_a2 = d2 * scaling
         z3 = np.dot(scaled_a2, weight3) + bias3
-        a3 = softmax(z3)
-        loss = -np.sum(y_batch * np.log(a3 + 1e-8)) / batch_size
+        z3_norm, cache3 = batch_norm(z3, gamma3, beta3, running_mean3, running_var3, training=True)
+        a3 = leaky_relu(z3_norm)
+        dropout_mask3 = np.random.rand(*a3.shape) > dropout_rate
+        d3 = a3 * dropout_mask3
+        scaled_a3 = d3 * scaling
+        z4 = np.dot(scaled_a3, weight4) + bias4
+        z4_norm, cache4 = batch_norm(z4, gamma4, beta4, running_mean4, running_var4, training=True)
+        a4 = leaky_relu(z4_norm)
+        dropout_mask4 = np.random.rand(*a4.shape) > dropout_rate
+        d4 = a4 * dropout_mask4 
+        scaled_a4 = d4 * scaling
+        z5 = np.dot(scaled_a4, weight5) + bias5
+        a5 = softmax(z5)
+        loss = -np.sum(y_batch * np.log(a5 + 1e-8)) / batch_size
         epoch_train_loss += loss
         batch_num += 1
         l2_lambda = 1e-5 # Tune this hyperparameter
-        l2_penalty = l2_lambda * (np.sum(weight1**2) + np.sum(weight2**2) + np.sum(weight3**2))
+        l2_penalty = l2_lambda * (np.sum(weight1**2) + np.sum(weight2**2) + np.sum(weight3**2) + np.sum(weight4**2) + np.sum(weight5**2))
         loss += l2_penalty
 
         #Backpropagation
-        dL_da3 = a3 - y_batch
-        dL_dweight3 = np.dot(scaled_a2.T, dL_da3) / batch_size
-        dL_dbias3 = np.sum(dL_da3, axis=0, keepdims=True) / batch_size
+        dL_da5 = a5 - y_batch
+        dL_dweight5 = np.dot(scaled_a4.T, dL_da5) / batch_size
+        dL_dbias5 = np.sum(dL_da5, axis=0, keepdims=True) / batch_size
 
-        dL_dz2_norm = np.dot(dL_da3, weight3.T)
-        dL_dz2, dgamma2, dbeta2 = backward_batch_norm(dL_dz2_norm * leaky_relu_derivative(z2_norm), cache2)# * dropout_mask2 * scaling, cache2)
+        dL_dz4_norm = np.dot(dL_da5, weight5.T)
+        dL_dz4, dgamma4, dbeta4 = backward_batch_norm(dL_dz4_norm * leaky_relu_derivative(z4_norm) * dropout_mask4 * scaling, cache4)
+        dL_dweight4 = np.dot(scaled_a3.T, dL_dz4) / batch_size
+        dL_dbias4 = np.sum(dL_dz4, axis=0, keepdims=True) / batch_size
+        
+        dL_dz3_norm = np.dot(dL_dz4, weight4.T)
+        dL_dz3, dgamma3, dbeta3 = backward_batch_norm(dL_dz3_norm * leaky_relu_derivative(z3_norm) * dropout_mask3 * scaling, cache3)
+        dL_dweight3 = np.dot(scaled_a2.T, dL_dz3) / batch_size
+        dL_dbias3 = np.sum(dL_dz3, axis=0, keepdims=True) / batch_size
+
+        dL_dz2_norm = np.dot(dL_dz3, weight3.T)
+        dL_dz2, dgamma2, dbeta2 = backward_batch_norm(dL_dz2_norm * leaky_relu_derivative(z2_norm) * dropout_mask2 * scaling, cache2)
         dL_dweight2 = np.dot(scaled_a1.T, dL_dz2) / batch_size
         dL_dbias2 = np.sum(dL_dz2, axis=0, keepdims=True) / batch_size
         
@@ -261,16 +321,24 @@ for epoch in range(epochs):
         dL_dweight1 = np.dot(x_batch.T, dL_dz1) / batch_size
         dL_dbias1 = np.sum(dL_dz1, axis=0, keepdims=True) / batch_size
 
+        weight5 -= learning_rate * dL_dweight5
+        weight4 -= learning_rate * dL_dweight4
         weight3 -= learning_rate * dL_dweight3
         weight2 -= learning_rate * dL_dweight2
         weight1 -= learning_rate * dL_dweight1
+        bias5 -= learning_rate * dL_dbias5
+        bias4 -= learning_rate * dL_dbias4
         bias3 -= learning_rate * dL_dbias3
         bias2 -= learning_rate * dL_dbias2 
         bias1 -= learning_rate * dL_dbias1 
-        gamma1 -= learning_rate * dgamma1
+        gamma4 -= learning_rate * dgamma4
+        gamma3 -= learning_rate * dgamma3
         gamma2 -= learning_rate * dgamma2
-        beta1 -= learning_rate * dbeta1
+        gamma1 -= learning_rate * dgamma1
+        beta4 -= learning_rate * dbeta4
+        beta3 -= learning_rate * dbeta3
         beta2 -= learning_rate * dbeta2
+        beta1 -= learning_rate * dbeta1
 
     learning_rate = cosine_decay(epoch, epochs-1, eta_max, eta_min)
 
@@ -281,11 +349,17 @@ for epoch in range(epochs):
     z2_val_norm, cache2 = batch_norm(z2_val, gamma2, beta2, running_mean2, running_var2, training=False)
     a2_val = leaky_relu(z2_val_norm)
     z3_val = np.dot(a2_val, weight3) + bias3
-    a3_val = softmax(z3_val)
-    val_pred = np.argmax(a3_val, axis=1)
+    z3_val_norm, cache3 = batch_norm(z3_val, gamma3, beta3, running_mean3, running_var3, training=False)
+    a3_val = leaky_relu(z3_val_norm)
+    z4_val = np.dot(a3_val, weight4) + bias4
+    z4_val_norm, cache4 = batch_norm(z4_val, gamma4, beta4, running_mean4, running_var4, training=False)
+    a4_val = leaky_relu(z4_val_norm)
+    z5_val = np.dot(a4_val, weight5) + bias5
+    a5_val = softmax(z5_val)
+    val_pred = np.argmax(a5_val, axis=1)
     val_true = np.argmax(y_test, axis=1)
     val_acc = np.mean(val_pred == val_true)
-    val_loss = -np.sum(y_test * np.log(a3_val + 1e-8)) / x_test.shape[0] 
+    val_loss = -np.sum(y_test * np.log(a5_val + 1e-8)) / x_test.shape[0] 
     val_loss_list.append(round(val_loss, 4))
     val_acc_list.append(val_acc)
     if earlystop(val_loss_list):
@@ -310,10 +384,22 @@ for epoch in range(epochs):
         np.save("beta2.npy", beta2)
         np.save("weight3.npy", weight3)
         np.save("bias3.npy", bias3)
+        np.save("gamma3.npy", gamma3)
+        np.save("beta3.npy", beta3)
+        np.save("weight4.npy", weight4)
+        np.save("bias4.npy", bias4)
+        np.save("gamma4.npy", gamma4)
+        np.save("beta4.npy", beta4)
+        np.save("weight5.npy", weight5)
+        np.save("bias5.npy", bias5)
         np.save("running_mean1.npy", running_mean1)
         np.save("running_var1.npy", running_var1)
         np.save("running_mean2.npy", running_mean2)
         np.save("running_var2.npy", running_var2)
+        np.save("running_mean3.npy", running_mean3)
+        np.save("running_var3.npy", running_var3)
+        np.save("running_mean4.npy", running_mean4)
+        np.save("running_var4.npy", running_var4)
         np.save("best_val_loss.npy", best_val_loss)
     
 plt.plot(range(1, epochs + 1), val_loss_list, linestyle='-', color='green', label='validation loss')
@@ -337,17 +423,17 @@ softmax_output = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
 def predict(x):
     global softmax_output
-    z1 = np.dot(x, weight1) + bias1
-    z1_norm, cache1 = batch_norm(z1, gamma1, beta1, running_mean1, running_var1, training=False)
-    a1 = leaky_relu(z1_norm)
-    z2 = np.dot(a1, weight2) + bias2 
-    z2_norm, cache2 = batch_norm(z2, gamma2, beta2, running_mean2, running_var2, training=False)
-    a2 = leaky_relu(z2_norm)
-    z3 = np.dot(a2, weight3) + bias3
-    softmax_output = softmax(z3)
-#    print(np.sum(softmax(z3)))
-#    print(np.floor(np.max(softmax_output)*100))
-    return np.argmax(softmax_output, axis=1)
+    z1 = np.dot(x, weight1_folded) + bias1_folded
+    a1 = leaky_relu(z1)
+    z2 = np.dot(a1, weight2_folded) + bias2_folded
+    a2 = leaky_relu(z2)
+    z3 = np.dot(a2, weight3_folded) + bias3_folded
+    a3 = leaky_relu(z3)
+    z4 = np.dot(a3, weight4_folded) + bias4_folded
+    a4 = leaky_relu(z4)
+    z5 = np.dot(a4, weight5) + bias5
+    softmax_output = softmax(z5)
+    return softmax_output
 
 #my sample
 def own_sample(event = None):
@@ -358,33 +444,33 @@ def own_sample(event = None):
     img = (img > 127).astype(np.float32)  # Apply thresholding (like training data)
     img = img.reshape(1, 28*28)  # Flatten to (1, 784)
   
-    guess = predict(img)
+    guess = np.argmax(predict(img), axis=1)
     plot_softmax()
     changeLabel()
 
 #accuracy test (using mnist)
-for i in range(len(x_test)):
-    prediction = predict(x_test[i].reshape(1, -1))  # Reshape to (1, 784)
-    Y = np.argmax(y_test[i])  # Get the true label  
+predictions = predict(x_test)  # Shape: (num_samples, num_classes)
+true_labels = np.argmax(y_test, axis=1)
+predicted_labels = np.argmax(predictions, axis=1)
 
-    if prediction == Y:  # `predict()` already returns class index
-        count += 1
-#        print(f"{i+1}. correct")
-#    else:
-#        print(f"{i+1}. wrong")
-    total += 1  
+# Count correct predictions
+correct = np.sum(predicted_labels == true_labels)
+total = x_test.shape[0]
 
-print(f'Validation accuracy: {count} / {total} = {count / total * 100}%')
+print(f'Validation accuracy: {correct} / {total} = {correct/ total * 100}%')
 
-for i in range(len(x_train)):
-    prediction = predict(x_train[i].reshape(1, -1))  # Reshape to (1, 784)
-    Y = np.argmax(y_train[i])  # Get the true label  
+count = 0
+total = 0
 
-    if prediction == Y:   
-        count += 1
-    total += 1  
+predictions = predict(x_train)  # Shape: (num_samples, num_classes)
+true_labels = np.argmax(y_train, axis=1)
+predicted_labels = np.argmax(predictions, axis=1)
 
-print(f'Training accuracy: {count} / {total} = {count / total * 100}%')
+# Count correct predictions
+correct = np.sum(predicted_labels == true_labels)
+total = x_train.shape[0]
+
+print(f'Training accuracy: {correct} / {total} = {correct / total * 100:.2f}%')
 
 #Graph time :DDD
 digits = np.array([0,1,2,3,4,5,6,7,8,9])
@@ -414,8 +500,6 @@ def plot_softmax():
 
     bar.draw_idle()
 
-plot_softmax()
-
 def changeLabel():
     guessLabel.config(text=f"The NN think it's the number {guess.item()}\nand its {np.floor(np.max(softmax_output)*10000)/100}% sure")
 
@@ -432,5 +516,5 @@ canvas.bind("<B1-Motion>", paint)
 canvas.bind("<B3-Motion>", erase)
 canvas.bind("<Button-2>", clear)
 
-root.mainloop()
+#root.mainloop()
 

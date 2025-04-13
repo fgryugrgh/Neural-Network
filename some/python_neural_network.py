@@ -228,6 +228,9 @@ for i in range(len(x_test)):
 
 print(f'Validation accuracy: {count} / {total} = {count / total * 100}%')
 
+count = 0
+total = 0
+
 for i in range(len(x_train)):
     prediction = predict(x_train[i].reshape(1, -1))  # Reshape to (1, 784)
     Y = np.argmax(y_train[i])  # Get the true label  
