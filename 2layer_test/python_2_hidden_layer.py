@@ -363,28 +363,28 @@ def own_sample(event = None):
     changeLabel()
 
 #accuracy test (using mnist)
-for i in range(len(x_test)):
-    prediction = predict(x_test[i].reshape(1, -1))  # Reshape to (1, 784)
-    Y = np.argmax(y_test[i])  # Get the true label  
+predictions = predict(x_test)  # Shape: (num_samples, num_classes)
+true_labels = np.argmax(y_test, axis=1)
+predicted_labels = np.argmax(predictions, axis=1)
 
-    if prediction == Y:  # `predict()` already returns class index
-        count += 1
-#        print(f"{i+1}. correct")
-#    else:
-#        print(f"{i+1}. wrong")
-    total += 1  
+# Count correct predictions
+correct = np.sum(predicted_labels == true_labels)
+total = x_test.shape[0]
 
-print(f'Validation accuracy: {count} / {total} = {count / total * 100}%')
+print(f'Validation accuracy: {correct} / {total} = {correct/ total * 100}%')
 
-for i in range(len(x_train)):
-    prediction = predict(x_train[i].reshape(1, -1))  # Reshape to (1, 784)
-    Y = np.argmax(y_train[i])  # Get the true label  
+count = 0
+total = 0
 
-    if prediction == Y:   
-        count += 1
-    total += 1  
+predictions = predict(x_train)  # Shape: (num_samples, num_classes)
+true_labels = np.argmax(y_train, axis=1)
+predicted_labels = np.argmax(predictions, axis=1)
 
-print(f'Training accuracy: {count} / {total} = {count / total * 100}%')
+# Count correct predictions
+correct = np.sum(predicted_labels == true_labels)
+total = x_train.shape[0]
+
+print(f'Training accuracy: {correct} / {total} = {correct / total * 100:.2f}%')
 
 #Graph time :DDD
 digits = np.array([0,1,2,3,4,5,6,7,8,9])

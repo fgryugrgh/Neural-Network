@@ -77,6 +77,12 @@ def save_image(event=None):
 
 #Neural Network Part
 rng = np.random.default_rng()
+#weights_data = np.load('weights.npz')
+#bias_data = np.load('biases.npz')
+#gamma_data = np.load('gammas.npz')
+#beta_data = np.load('betas.npz')
+#running_mean_data = np.load('running_means.npz')
+#running_var_data = np.load('running_vars.npz')
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
@@ -202,13 +208,40 @@ def backward_batch_norm(dout, cache):
 #weight5 = np.random.randn(hidden_4_size, output_size) * np.sqrt(2.0 / hidden_4_size)
 #bias5 = np.zeros((1, output_size))
 
-epochs = 100
+epochs = 0
 warmup_epochs = 15
 batch_size = 128
 eta_start = 0.0005
 eta_max = 0.001
 eta_min = 0.00001
 learning_rate = 0.0005
+
+#weight1 = weights_data['w1']
+#bias1 = bias_data['b1']
+#gamma1 = gamma_data['g1']
+#beta1 = beta_data['be1']
+#weight2 = weights_data['w2']
+#bias2 = bias_data['b2']
+#gamma2 = gamma_data['g2']
+#beta2 = beta_data['be2'] 
+#weight3 = weights_data['w3']
+#bias3 = bias_data['b3']
+#gamma3 = gamma_data['g3']
+#beta3 = beta_data['be3']
+#weight4 = weights_data['w4']
+#bias4 = bias_data['b4']
+#gamma4 = gamma_data['g4']
+#beta4 = beta_data['be4'] 
+#weight5 = weights_data['w5'] 
+#bias5 = bias_data['b5']
+#running_mean1 = running_mean_data['rm1']
+#running_var1 = running_var_data['rv1']
+#running_mean2 = running_mean_data['rm2']
+#running_var2 = running_var_data['rv2']
+#running_mean3 = running_mean_data['rm3']
+#running_var3 = running_var_data['rv3']
+#running_mean4 = running_mean_data['rm4']
+#running_var4 = running_var_data['rv4']
 
 weight1 = np.load("weight1.npy")
 bias1 = np.load("bias1.npy")
@@ -250,8 +283,8 @@ weight4_folded = weight4 * scale4
 bias4_folded = (bias4 - running_mean4) * scale4 + beta4
 
 #Training
-#best_val_loss = float('inf')
-best_val_loss = np.load("best_val_loss.npy")
+best_val_loss = float('inf')
+#best_val_loss = np.load("best_val_loss.npy")
 val_loss_list = []
 val_acc_list = []
 start_time = time.time()
@@ -374,6 +407,13 @@ for epoch in range(epochs):
     if val_loss < best_val_loss:
         best_val_loss = val_loss
         print(f"New best model at epoch {epoch}, val loss: {val_loss}")
+        np.savez("weights", w1=weight1, w2=weight2, w3=weight3, w4=weight4, w5=weight5)
+        np.savez("biases", b1=bias1, b2=bias2, b3=bias3, b4=bias4, b5=bias5)
+        np.savez("gammas", g1=gamma1, g2=gamma2, g3=gamma3, g4=gamma4)
+        np.savez("betas", be1=beta1, be2=beta2, be3=beta3, be4=beta4)
+        np.savez("running_means", rm1=running_mean1, rm2=running_mean2, rm3=running_mean3, rm4=running_mean4)
+        np.savez("running_vars", rv1=running_var1, rv2=running_var2, rv3=running_var3, rv4=running_var4)
+
         np.save("weight1.npy", weight1)
         np.save("bias1.npy", bias1)
         np.save("gamma1.npy", gamma1)
@@ -400,7 +440,7 @@ for epoch in range(epochs):
         np.save("running_var3.npy", running_var3)
         np.save("running_mean4.npy", running_mean4)
         np.save("running_var4.npy", running_var4)
-        np.save("best_val_loss.npy", best_val_loss)
+        #np.save("best_val_loss.npy", best_val_loss)
     
 plt.plot(range(1, epochs + 1), val_loss_list, linestyle='-', color='green', label='validation loss')
 plt.plot(range(1, epochs + 1), val_acc_list, linestyle='-', color='orange', label='validation accuracy')
