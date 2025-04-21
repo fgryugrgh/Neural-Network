@@ -420,7 +420,7 @@ plt.ylabel('Value')
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
-plt.savefig("val_graph.png")
+plt.savefig("valgraphs/val_graph_tes_testt.png")
 plt.close()
 
 end_time = time.time()
