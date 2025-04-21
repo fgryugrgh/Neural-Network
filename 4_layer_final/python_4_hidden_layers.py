@@ -1,5 +1,6 @@
 #spaghetti code my hhhheloved
 #i love making hyper complicated code that's barely worth any grade yayyy
+import io
 import cv2
 import time
 import numpy as np 
@@ -72,8 +73,9 @@ def paint(event):
 guide = Label(root, anchor="w", justify="left", text="Left Click Drag: Draw\nRight Click Drag: Erase\nMiddle Click: Clear Canvas\nS or Enter: Save and make prediction\nDraw the number on the center and not too big for the best result")
 guide.grid(row=1, column=0, sticky="w", padx=15)
 
-def save_image(event=None):
-    image.save("drawing.png")  # Save as PNG
+def image_to_array(event=None):
+    img_array = np.array(image.convert("L"))
+    return img_array
 
 #Neural Network Part
 rng = np.random.default_rng()
@@ -209,7 +211,7 @@ def backward_batch_norm(dout, cache):
 #weight5 = np.random.randn(hidden_4_size, output_size) * np.sqrt(2.0 / hidden_4_size)
 #bias5 = np.zeros((1, output_size))
 
-epochs = 1
+epochs =0 
 warmup_epochs = 1 
 batch_size = 128
 eta_start = 0.00001
@@ -460,8 +462,8 @@ def predict(x):
 #my sample
 def own_sample(event = None):
     global guess
-    save_image()
-    img = cv2.imread("drawing.png", cv2.IMREAD_GRAYSCALE)
+    img = image_to_array()
+    #img = cv2.imread("drawing.png", cv2.IMREAD_GRAYSCALE)
     img = cv2.resize(img, (28, 28))  # Ensure 28x28 size
     img = (img > 127).astype(np.float32)  # Apply thresholding (like training data)
     img = img.reshape(1, 28*28)  # Flatten to (1, 784)
