@@ -96,7 +96,7 @@ running_var_data = np.load('running_vars.npz')
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
-x_train = x_train.reshape(-1, 28*28) / 255.0
+x_train = x_train.reshape(-1, 28*28)
 x_test = x_test.reshape(-1, 28*28) / 255.0
 
 #x_train = (x_train > 0.5).astype(np.float32)
@@ -219,13 +219,13 @@ def backward_batch_norm(dout, cache):
 #weight5 = np.random.randn(hidden_4_size, output_size) * np.sqrt(2.0 / hidden_4_size)
 #bias5 = np.zeros((1, output_size))
 
-epochs =0 
+epochs = 0 
 warmup_epochs = 1 
 batch_size = 128
-eta_start = 0.00001
-eta_max = 0.001
-eta_min = 0.00001
-learning_rate = 0.00001
+eta_start = 0.05
+eta_max = 0.1
+eta_min = 0.001
+learning_rate = 0.05
 
 weight1 = weights_data['w1']
 bias1 = bias_data['b1']
@@ -278,8 +278,12 @@ for epoch in range(epochs):
     epoch_train_loss = 0
     batch_num = 0
     for i in range(0, x_train.shape[0], batch_size):
-        x_batch = x_train[i:i+batch_size]
+        x_batch = x_train[i:i+batch_size] / 255.0
         y_batch = y_train[i:i+batch_size]
+        x_batch_tensor = tf.convert_to_tensor(x_batch)
+        x_batch_tensor = data_augmentation(x_batch_tensor, training=True)
+        x_batch = x_batch_tensor.numpy()
+        x_batch = x_batch.reshape(-1, 28*28)
 
         z1 = np.dot(x_batch, weight1) + bias1
         z1_norm, cache1 = batch_norm(z1, gamma1, beta1, running_mean1, running_var1, training=True)
@@ -406,32 +410,6 @@ for epoch in range(epochs):
         np.savez("running_means", rm1=running_mean1, rm2=running_mean2, rm3=running_mean3, rm4=running_mean4)
         np.savez("running_vars", rv1=running_var1, rv2=running_var2, rv3=running_var3, rv4=running_var4)
 
-        np.save("weight1.npy", weight1)
-        np.save("bias1.npy", bias1)
-        np.save("gamma1.npy", gamma1)
-        np.save("beta1.npy", beta1)
-        np.save("weight2.npy", weight2)
-        np.save("bias2.npy", bias2)
-        np.save("gamma2.npy", gamma2)
-        np.save("beta2.npy", beta2)
-        np.save("weight3.npy", weight3)
-        np.save("bias3.npy", bias3)
-        np.save("gamma3.npy", gamma3)
-        np.save("beta3.npy", beta3)
-        np.save("weight4.npy", weight4)
-        np.save("bias4.npy", bias4)
-        np.save("gamma4.npy", gamma4)
-        np.save("beta4.npy", beta4)
-        np.save("weight5.npy", weight5)
-        np.save("bias5.npy", bias5)
-        np.save("running_mean1.npy", running_mean1)
-        np.save("running_var1.npy", running_var1)
-        np.save("running_mean2.npy", running_mean2)
-        np.save("running_var2.npy", running_var2)
-        np.save("running_mean3.npy", running_mean3)
-        np.save("running_var3.npy", running_var3)
-        np.save("running_mean4.npy", running_mean4)
-        np.save("running_var4.npy", running_var4)
         np.save("best_val_loss.npy", best_val_loss)
     
 plt.plot(range(1, epochs + 1), val_loss_list, linestyle='-', color='green', label='validation loss')
@@ -494,6 +472,7 @@ print(f'Validation accuracy: {correct} / {total} = {correct/ total * 100}%')
 count = 0
 total = 0
 
+x_train = x_train.reshape(-1, 28*28) / 255.0
 predictions = predict(x_train)  # Shape: (num_samples, num_classes)
 true_labels = np.argmax(y_train, axis=1)
 predicted_labels = np.argmax(predictions, axis=1)
