@@ -5,6 +5,7 @@ import cv2
 import time
 import numpy as np 
 from tensorflow.keras.datasets import mnist
+import tensorflow as tf
 import matplotlib.pyplot as plt
 from tkinter import Tk, Frame, Canvas, Text, Label
 from PIL import Image, ImageDraw, ImageTk
@@ -78,6 +79,13 @@ def image_to_array(event=None):
     return img_array
 
 #Neural Network Part
+
+data_augmentation = tf.keras.Sequential([
+    tf.keras.layers.RandomRotation(0.1, interpolation='bilinear'),
+    tf.keras.layers.RandomZoom(0.1, interpolation='nearest'),
+    tf.keras.layers.RandomTranslation(height_factor=(-0.1, 0.1), width_factor=(-0.1, 0.1), interpolation='nearest')
+])
+
 rng = np.random.default_rng()
 weights_data = np.load('weights.npz')
 bias_data = np.load('biases.npz')
