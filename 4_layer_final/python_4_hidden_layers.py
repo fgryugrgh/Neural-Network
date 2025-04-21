@@ -77,12 +77,12 @@ def save_image(event=None):
 
 #Neural Network Part
 rng = np.random.default_rng()
-#weights_data = np.load('weights.npz')
-#bias_data = np.load('biases.npz')
-#gamma_data = np.load('gammas.npz')
-#beta_data = np.load('betas.npz')
-#running_mean_data = np.load('running_means.npz')
-#running_var_data = np.load('running_vars.npz')
+weights_data = np.load('weights.npz')
+bias_data = np.load('biases.npz')
+gamma_data = np.load('gammas.npz')
+beta_data = np.load('betas.npz')
+running_mean_data = np.load('running_means.npz')
+running_var_data = np.load('running_vars.npz')
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
@@ -188,6 +188,7 @@ def backward_batch_norm(dout, cache):
     return dx, dgamma, dbeta
 
 #Weight and Biases
+#initialization
 #np.random.seed(42)
 #weight1 = np.random.randn(input_size, hidden_1_size) * np.sqrt(2.0 / input_size)
 #bias1 = np.zeros((1, hidden_1_size))
@@ -208,67 +209,41 @@ def backward_batch_norm(dout, cache):
 #weight5 = np.random.randn(hidden_4_size, output_size) * np.sqrt(2.0 / hidden_4_size)
 #bias5 = np.zeros((1, output_size))
 
-epochs = 0
-warmup_epochs = 15
+epochs = 1
+warmup_epochs = 1 
 batch_size = 128
-eta_start = 0.0005
+eta_start = 0.00001
 eta_max = 0.001
 eta_min = 0.00001
-learning_rate = 0.0005
+learning_rate = 0.00001
 
-#weight1 = weights_data['w1']
-#bias1 = bias_data['b1']
-#gamma1 = gamma_data['g1']
-#beta1 = beta_data['be1']
-#weight2 = weights_data['w2']
-#bias2 = bias_data['b2']
-#gamma2 = gamma_data['g2']
-#beta2 = beta_data['be2'] 
-#weight3 = weights_data['w3']
-#bias3 = bias_data['b3']
-#gamma3 = gamma_data['g3']
-#beta3 = beta_data['be3']
-#weight4 = weights_data['w4']
-#bias4 = bias_data['b4']
-#gamma4 = gamma_data['g4']
-#beta4 = beta_data['be4'] 
-#weight5 = weights_data['w5'] 
-#bias5 = bias_data['b5']
-#running_mean1 = running_mean_data['rm1']
-#running_var1 = running_var_data['rv1']
-#running_mean2 = running_mean_data['rm2']
-#running_var2 = running_var_data['rv2']
-#running_mean3 = running_mean_data['rm3']
-#running_var3 = running_var_data['rv3']
-#running_mean4 = running_mean_data['rm4']
-#running_var4 = running_var_data['rv4']
+weight1 = weights_data['w1']
+bias1 = bias_data['b1']
+gamma1 = gamma_data['g1']
+beta1 = beta_data['be1']
+weight2 = weights_data['w2']
+bias2 = bias_data['b2']
+gamma2 = gamma_data['g2']
+beta2 = beta_data['be2'] 
+weight3 = weights_data['w3']
+bias3 = bias_data['b3']
+gamma3 = gamma_data['g3']
+beta3 = beta_data['be3']
+weight4 = weights_data['w4']
+bias4 = bias_data['b4']
+gamma4 = gamma_data['g4']
+beta4 = beta_data['be4'] 
+weight5 = weights_data['w5'] 
+bias5 = bias_data['b5']
+running_mean1 = running_mean_data['rm1']
+running_var1 = running_var_data['rv1']
+running_mean2 = running_mean_data['rm2']
+running_var2 = running_var_data['rv2']
+running_mean3 = running_mean_data['rm3']
+running_var3 = running_var_data['rv3']
+running_mean4 = running_mean_data['rm4']
+running_var4 = running_var_data['rv4']
 
-weight1 = np.load("weight1.npy")
-bias1 = np.load("bias1.npy")
-gamma1 = np.load("gamma1.npy")
-beta1 = np.load("beta1.npy")
-weight2 = np.load("weight2.npy")
-bias2 = np.load("bias2.npy")
-gamma2 = np.load("gamma2.npy")
-beta2 = np.load("beta2.npy") 
-weight3 = np.load("weight3.npy")
-bias3 = np.load("bias3.npy")
-gamma3 = np.load("gamma3.npy")
-beta3 = np.load("beta3.npy")
-weight4 = np.load("weight4.npy")
-bias4 = np.load("bias4.npy")
-gamma4 = np.load("gamma4.npy")
-beta4 = np.load("beta4.npy") 
-weight5 = np.load("weight5.npy") 
-bias5 = np.load("bias5.npy")
-running_mean1 = np.load("running_mean1.npy")
-running_var1 = np.load("running_var1.npy")
-running_mean2 = np.load("running_mean2.npy")
-running_var2 = np.load("running_var2.npy")
-running_mean3 = np.load("running_mean3.npy")
-running_var3 = np.load("running_var3.npy")
-running_mean4 = np.load("running_mean4.npy")
-running_var4 = np.load("running_var4.npy")
 scale1 = gamma1 / np.sqrt(running_var1 + small_constant)
 weight1_folded = weight1 * scale1  
 bias1_folded = (bias1 - running_mean1) * scale1 + beta1
@@ -283,8 +258,8 @@ weight4_folded = weight4 * scale4
 bias4_folded = (bias4 - running_mean4) * scale4 + beta4
 
 #Training
-best_val_loss = float('inf')
-#best_val_loss = np.load("best_val_loss.npy")
+#best_val_loss = float('inf')
+best_val_loss = np.load("best_val_loss.npy")
 val_loss_list = []
 val_acc_list = []
 start_time = time.time()
@@ -399,6 +374,13 @@ for epoch in range(epochs):
         break
     avg_train_loss = epoch_train_loss/batch_num
 
+    np.savez("weights", w1=weight1, w2=weight2, w3=weight3, w4=weight4, w5=weight5)
+    np.savez("biases", b1=bias1, b2=bias2, b3=bias3, b4=bias4, b5=bias5)
+    np.savez("gammas", g1=gamma1, g2=gamma2, g3=gamma3, g4=gamma4)
+    np.savez("betas", be1=beta1, be2=beta2, be3=beta3, be4=beta4)
+    np.savez("running_means", rm1=running_mean1, rm2=running_mean2, rm3=running_mean3, rm4=running_mean4)
+    np.savez("running_vars", rv1=running_var1, rv2=running_var2, rv3=running_var3, rv4=running_var4)
+
     print(f"Avg Train Loss: {avg_train_loss}")
     print(f"Val loss: {val_loss}, Best Val Loss: {best_val_loss}")
     print(f"Current val acc: {val_acc}")
@@ -440,7 +422,7 @@ for epoch in range(epochs):
         np.save("running_var3.npy", running_var3)
         np.save("running_mean4.npy", running_mean4)
         np.save("running_var4.npy", running_var4)
-        #np.save("best_val_loss.npy", best_val_loss)
+        np.save("best_val_loss.npy", best_val_loss)
     
 plt.plot(range(1, epochs + 1), val_loss_list, linestyle='-', color='green', label='validation loss')
 plt.plot(range(1, epochs + 1), val_acc_list, linestyle='-', color='orange', label='validation accuracy')
@@ -556,5 +538,5 @@ canvas.bind("<B1-Motion>", paint)
 canvas.bind("<B3-Motion>", erase)
 canvas.bind("<Button-2>", clear)
 
-#root.mainloop()
+root.mainloop()
 
